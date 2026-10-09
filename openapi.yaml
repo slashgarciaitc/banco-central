@@ -1,0 +1,207 @@
+openapi: 3.0.3
+info:
+  title: API del Banco Central
+  version: 1.0.0
+  description: >
+    Funciones de Postgres expuestas por Supabase (PostgREST). Las usan las
+    sucursales y los cajeros con la llave pública de Supabase en el header
+    `apikey` y su propia API key en el cuerpo (`p_api_key`).
+servers:
+  - url: https://atvynuiobfnsyanrjlyf.supabase.co/rest/v1
+
+security:
+  - apikey: []
+
+paths:
+  /rpc/info_nodo:
+    post:
+      summary: Datos del nodo dueño de la API key
+      operationId: infoNodo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example: { p_api_key: bk_... }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: { id: 1, tipo: sucursal, nombre: Sucursal Centro, responsable: Ejecutivo, efectivo: 50000 }
+        '401': { $ref: '#/components/responses/Error' }
+
+  /rpc/crear_cuenta:
+    post:
+      summary: Abrir una cuenta (solo sucursales)
+      operationId: crearCuenta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example: { p_api_key: bk_..., p_titular: Cliente Demo, p_saldo_inicial: 1000 }
+      responses:
+        '200':
+          description: Cuenta creada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cuenta' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+
+  /rpc/consultar_saldo:
+    post:
+      summary: Consultar una cuenta
+      operationId: consultarSaldo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example: { p_api_key: bk_..., p_numero_cuenta: '4000000001' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cuenta' }
+        '401': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /rpc/retirar:
+    post:
+      summary: Retirar de una cuenta
+      operationId: retirar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example: { p_api_key: bk_..., p_numero_cuenta: '4000000001', p_monto: 300 }
+      responses:
+        '200':
+          description: Retiro hecho
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Movimiento' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403':
+          description: Cuenta bloqueada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '422':
+          description: Fondos insuficientes o el nodo no tiene efectivo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /rpc/depositar:
+    post:
+      summary: Depositar a una cuenta
+      operationId: depositar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example: { p_api_key: bk_..., p_numero_cuenta: '4000000001', p_monto: 500 }
+      responses:
+        '200':
+          description: Depósito hecho
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Movimiento' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /rpc/historial:
+    post:
+      summary: Movimientos del nodo, o de una cuenta si se manda p_numero_cuenta
+      operationId: historial
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example: { p_api_key: bk_..., p_numero_cuenta: '4000000001' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Transaccion' }
+        '401': { $ref: '#/components/responses/Error' }
+
+  /rpc/reporte_nodo:
+    post:
+      summary: Totales de operaciones del nodo
+      operationId: reporteNodo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example: { p_api_key: bk_... }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example:
+                nodo: Sucursal Centro
+                efectivo: 51000
+                cuentas_abiertas: 1
+                operaciones: [{ tipo: deposito, cantidad: 1, total: 1000 }]
+        '401': { $ref: '#/components/responses/Error' }
+
+components:
+  securitySchemes:
+    apikey:
+      type: apiKey
+      in: header
+      name: apikey
+
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        code: { type: string, example: PT422 }
+        message: { type: string, example: Fondos insuficientes }
+
+    Cuenta:
+      type: object
+      properties:
+        numero_cuenta: { type: string, example: '4000000001' }
+        titular: { type: string, example: Cliente Demo }
+        saldo: { type: number, example: 1000 }
+        estado: { type: string, enum: [activa, bloqueada] }
+
+    Movimiento:
+      type: object
+      properties:
+        transaccion_id: { type: integer, example: 2 }
+        numero_cuenta: { type: string, example: '4000000001' }
+        monto: { type: number, example: 300 }
+        saldo: { type: number, example: 700 }
+        efectivo_nodo: { type: number, example: 9700 }
+        fecha: { type: string, format: date-time }
+
+    Transaccion:
+      type: object
+      properties:
+        id: { type: integer }
+        cuenta_origen: { type: string, nullable: true }
+        cuenta_destino: { type: string, nullable: true }
+        monto: { type: number }
+        tipo: { type: string, enum: [retiro, deposito, transferencia] }
+        nodo_id: { type: integer }
+        created_at: { type: string, format: date-time }
