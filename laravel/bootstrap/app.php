@@ -13,6 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // render atiende el https en su proxy y manda la peticion como http
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'central.admin' => EnsureCentralAdmin::class,
         ]);

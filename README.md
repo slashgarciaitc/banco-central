@@ -63,6 +63,7 @@ panel del Banco Central (service key).
 
 ```
 banco-central/
+├── laravel/            panel de administración
 ├── supabase/
 │   └── migrations/     tablas, RLS y funciones
 ├── scripts/
