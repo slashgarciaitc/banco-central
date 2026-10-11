@@ -29,7 +29,7 @@ el Banco Central. La tabla `transactions` no se puede editar ni borrar.
 
 | Nodo | Repositorio | Despliegue |
 |---|---|---|
-| Banco Central | [banco-central](https://github.com/slashgarciaitc/banco-central) | Panel en Render: pendiente |
+| Banco Central | [banco-central](https://github.com/slashgarciaitc/banco-central) | Panel en Render: https://banco-central-1llb.onrender.com |
 | Sucursal | [banco-sucursal](https://github.com/slashgarciaitc/banco-sucursal) | https://banco-sucursal.vercel.app |
 | Cajero | [banco-cajero](https://github.com/slashgarciaitc/banco-cajero) | Coolify (autoalojado en una VM local): http://cajero.192.168.139.102.sslip.io |
 
